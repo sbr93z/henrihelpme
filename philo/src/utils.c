@@ -6,7 +6,7 @@
 /*   By: sferrad <sferrad@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/11 15:39:45 by sferrad           #+#    #+#             */
-/*   Updated: 2025/02/23 18:08:11 by sferrad          ###   ########.fr       */
+/*   Updated: 2025/02/23 20:34:12 by sferrad          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -75,11 +75,14 @@ void	init_philosopher(t_data *data, int id)
 		pthread_mutex_destroy(&philo->meal_count_mutex);
 		return ; // Gérer l'erreur
 	}
-	if (pthread_mutex_init(&philo->is_full_mutex, NULL) != 0)
+	if (data->number_of_eat != -1)
 	{
-		pthread_mutex_destroy(&philo->meal_count_mutex);
-		pthread_mutex_destroy(&philo->last_meal_time_mutex);
-		return ; // Gérer l'erreur
+		if (pthread_mutex_init(&philo->is_full_mutex, NULL) != 0)
+		{
+			pthread_mutex_destroy(&philo->meal_count_mutex);
+			pthread_mutex_destroy(&philo->last_meal_time_mutex);
+			return ; // Gérer l'erreur
+		}
 	}
 }
 
@@ -103,40 +106,44 @@ void	init_philosophers_and_forks(t_data *data)
 		init_philosopher(data, i);
 	}
 }
-
-void ft_free_ressources(t_data *data)
+void	ft_free_ressources(t_data *data)
 {
-    int i;
+	int	i;
 
-    if (data->philos)
-    {
-        i = 0;
-        while (i < data->number_of_philo)
-        {
-            pthread_mutex_destroy(&data->philos[i].meal_count_mutex);
-            pthread_mutex_destroy(&data->philos[i].last_meal_time_mutex);
-            i++;
-        }
-        free(data->philos);
-    }
-
-    if (data->forks)
-    {
-        i = 0;
-        while (i < data->number_of_philo)
-        {
-            pthread_mutex_destroy(&data->forks[i].fork);
-            i++;
-        }
-        free(data->forks);
-    }
-
-    pthread_mutex_destroy(&data->end_simulation_mutex);
-    pthread_mutex_destroy(&data->print_mutex);
-    pthread_mutex_destroy(&data->last_meal_mutex); // Ajout de la destruction
-	pthread_mutex_destroy(&data->is_full_mutex); // Ajout de la destruction
+	if (data->philos)
+	{
+		i = 0;
+		while (i < data->number_of_philo)
+		{
+			pthread_mutex_destroy(&data->philos[i].meal_count_mutex);
+			pthread_mutex_destroy(&data->philos[i].last_meal_time_mutex);
+			if (data->number_of_eat != -1)
+			{
+				pthread_mutex_destroy(&data->philos[i].is_full_mutex);
+			}
+			i++;
+		}
+		free(data->philos);
+	}
+	if (data->forks)
+	{
+		i = 0;
+		while (i < data->number_of_philo)
+		{
+			pthread_mutex_destroy(&data->forks[i].fork);
+			i++;
+		}
+		free(data->forks);
+	}
+	pthread_mutex_destroy(&data->end_simulation_mutex);
+	pthread_mutex_destroy(&data->print_mutex);
+	pthread_mutex_destroy(&data->last_meal_mutex);
+	// Vérification avant destruction du mutex is_full_mutex
+// 	if (data->number_of_eat != -1)
+// 	{
+// 		pthread_mutex_destroy(&data->is_full_mutex);
+// 	}
 }
-
 
 void	print_status(t_data *data, int philo_id, char *message)
 {
@@ -146,4 +153,3 @@ void	print_status(t_data *data, int philo_id, char *message)
 			philo_id, message);
 	pthread_mutex_unlock(&data->print_mutex);
 }
-
